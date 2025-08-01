@@ -3,89 +3,72 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AI Gambar Generator</title>
+  <title>Generator Gambar AI</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: sans-serif;
       padding: 20px;
-      background: #f2f2f2;
-      color: #333;
+      background: #f0f0f0;
     }
-    h1 {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    input, textarea, button {
+    textarea, input {
       width: 100%;
+      margin: 10px 0;
       padding: 10px;
-      margin: 8px 0;
       font-size: 16px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
     }
     img {
       margin-top: 20px;
       max-width: 100%;
-      border-radius: 10px;
-    }
-    #loading {
-      display: none;
-      color: green;
-      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <h1>AI Gambar Generator</h1>
-  <input type="text" id="apiKey" placeholder="Masukkan API Key dari Modelslab">
-  <textarea id="prompt" placeholder="Deskripsi gambar..."></textarea>
-  <button onclick="generateImage()">Generate Gambar</button>
-  <div id="loading">⏳ Sedang memproses gambar...</div>
-  <img id="result" src="">
+  <h1>🎨 Generator Gambar AI (ModelsLab)</h1>
+  <input type="text" id="prompt" placeholder="Prompt (misal: beautiful cyberpunk girl)">
+  <input type="text" id="negative" placeholder="Negative Prompt (misal: bad quality)">
+  <button onclick="generateImage()">🔮 Generate</button>
+  <div id="result"></div>
 
   <script>
-    async function generateImage() {
-      const apiKey = document.getElementById("apiKey").value.trim();
-      const prompt = document.getElementById("prompt").value.trim();
+    function generateImage() {
+      const prompt = document.getElementById('prompt').value;
+      const negative = document.getElementById('negative').value;
+      const result = document.getElementById('result');
+      result.innerHTML = "⏳ Sedang memproses...";
 
-      if (!apiKey || !prompt) {
-        alert("Isi API key dan prompt terlebih dahulu.");
-        return;
-      }
-
-      document.getElementById("loading").style.display = "block";
-      document.getElementById("result").src = "";
-
-      const payload = {
-        key: apiKey,
-        model_id: "midjourney",
-        prompt: prompt,
-        negative_prompt: "blurry, distorted, ugly, low quality",
-        width: "512",
-        height: "512",
-        samples: "1",
-        num_inference_steps: "30",
-        guidance_scale: 7.5,
-        safety_checker: "no",
-        enhance_prompt: "yes",
-        use_karras_sigmas: "yes",
-        scheduler: "UniPCMultistepScheduler"
-      };
-
-      const res = await fetch("https://modelslab.com/api/v6/images/text2img", {
+      fetch("https://modelslab.com/api/v6/realtime/text2img", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key: "rCBXhYGsL0luODJ1F6pqBQ5nDP6Cb7k7Ggn2JL6MpTwHvKDOMa9bBzH1dIMS",
+          prompt: prompt,
+          negative_prompt: negative,
+          width: "512",
+          height: "512",
+          safety_checker: false,
+          seed: null,
+          samples: 1,
+          base64: false,
+          webhook: null,
+          track_id: null
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "success") {
+          result.innerHTML = `<img src="${data.output[0]}" alt="Generated Image">`;
+        } else {
+          result.innerHTML = "❌ Gagal generate gambar.";
+        }
+      })
+      .catch(err => {
+        result.innerHTML = "❌ Error: " + err;
       });
-
-      const data = await res.json();
-      document.getElementById("loading").style.display = "none";
-
-      if (data && data.output && data.output[0]) {
-        document.getElementById("result").src = data.output[0];
-      } else {
-        alert("Gagal menghasilkan gambar. Periksa API key atau prompt.");
-      }
     }
   </script>
 </body>
