@@ -3,118 +3,88 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AbidinAI Gambar</title>
+  <title>AI Gambar Generator</title>
   <style>
     body {
-      margin: 0;
       font-family: Arial, sans-serif;
-      background: #f0f0f0;
-      display: flex;
-      justify-content: center;
       padding: 20px;
-    }
-
-    .container {
-      max-width: 600px;
-      width: 100%;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.1);
-      text-align: center;
-    }
-
-    h1 {
+      background: #f2f2f2;
       color: #333;
-      margin-bottom: 20px;
     }
-
-    textarea {
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    input, textarea, button {
       width: 100%;
-      height: 100px;
-      font-size: 16px;
       padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      resize: none;
-      margin-bottom: 15px;
-    }
-
-    button {
-      padding: 10px 20px;
+      margin: 8px 0;
       font-size: 16px;
-      background: #4caf50;
-      color: white;
-      border: none;
-      cursor: pointer;
-      border-radius: 5px;
     }
-
-    button:hover {
-      background: #45a049;
-    }
-
-    .image-container {
+    img {
       margin-top: 20px;
-    }
-
-    .image-container img {
       max-width: 100%;
       border-radius: 10px;
-      margin-top: 10px;
     }
-
-    .loading {
-      font-style: italic;
-      color: gray;
+    #loading {
+      display: none;
+      color: green;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>AbidinAI - Buat Gambar dari Teks</h1>
-    <textarea id="prompt" placeholder="Tulis deskripsi gambar, misalnya: kucing lucu di bulan..."></textarea>
-    <br />
-    <button onclick="generateImage()">Buat Gambar</button>
-    <div class="image-container" id="imageContainer">
-      <p class="loading">Gambar akan muncul di sini...</p>
-    </div>
-  </div>
+  <h1>AI Gambar Generator</h1>
+  <input type="text" id="apiKey" placeholder="Masukkan API Key dari Modelslab">
+  <textarea id="prompt" placeholder="Deskripsi gambar..."></textarea>
+  <button onclick="generateImage()">Generate Gambar</button>
+  <div id="loading">⏳ Sedang memproses gambar...</div>
+  <img id="result" src="">
 
   <script>
-    const HF_TOKEN = "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";
-
     async function generateImage() {
+      const apiKey = document.getElementById("apiKey").value.trim();
       const prompt = document.getElementById("prompt").value.trim();
-      const container = document.getElementById("imageContainer");
-      
-      if (!prompt) {
-        alert("Tolong isi prompt gambarnya dulu ya!");
+
+      if (!apiKey || !prompt) {
+        alert("Isi API key dan prompt terlebih dahulu.");
         return;
       }
 
-      container.innerHTML = `<p class="loading">Sedang membuat gambar dari prompt: <b>${prompt}</b>...</p>`;
+      document.getElementById("loading").style.display = "block";
+      document.getElementById("result").src = "";
 
-      try {
-        const response = await fetch("https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${HF_TOKEN}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ inputs: prompt })
-        });
+      const payload = {
+        key: apiKey,
+        model_id: "midjourney",
+        prompt: prompt,
+        negative_prompt: "blurry, distorted, ugly, low quality",
+        width: "512",
+        height: "512",
+        samples: "1",
+        num_inference_steps: "30",
+        guidance_scale: 7.5,
+        safety_checker: "no",
+        enhance_prompt: "yes",
+        use_karras_sigmas: "yes",
+        scheduler: "UniPCMultistepScheduler"
+      };
 
-        if (!response.ok) {
-          container.innerHTML = `<p class="loading">Gagal memuat gambar. Coba lagi nanti.</p>`;
-          return;
-        }
+      const res = await fetch("https://modelslab.com/api/v6/images/text2img", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
 
-        const blob = await response.blob();
-        const imageUrl = URL.createObjectURL(blob);
-        container.innerHTML = `<img src="${imageUrl}" alt="Gambar AI">`;
-      } catch (err) {
-        container.innerHTML = `<p class="loading">Terjadi kesalahan: ${err.message}</p>`;
+      const data = await res.json();
+      document.getElementById("loading").style.display = "none";
+
+      if (data && data.output && data.output[0]) {
+        document.getElementById("result").src = data.output[0];
+      } else {
+        alert("Gagal menghasilkan gambar. Periksa API key atau prompt.");
       }
     }
   </script>
